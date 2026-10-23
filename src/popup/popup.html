@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>YouTube 双语字幕</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>YouTube 双语字幕</h1>
+    <label class="switch" title="启用/停用双语字幕">
+      <input type="checkbox" id="enabled" />
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <main>
+    <div class="row">
+      <label for="showOriginal">显示英文原文</label>
+      <input type="checkbox" id="showOriginal" />
+    </div>
+
+    <div class="row">
+      <label for="enFontSize">英文字号</label>
+      <select id="enFontSize">
+        <option value="18">小</option>
+        <option value="22">中</option>
+        <option value="28">大</option>
+        <option value="36">特大</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="zhFontSize">中文字号</label>
+      <select id="zhFontSize">
+        <option value="12">小</option>
+        <option value="16">中</option>
+        <option value="22">大</option>
+        <option value="28">特大</option>
+      </select>
+    </div>
+
+    <p class="hint">在 YouTube 视频播放页生效。悬停字幕上按 Ctrl+滚轮可快速缩放该行；点击英文单词可查音标释义；右上角按钮解锁后可分别拖动中英字幕。</p>
+    <p class="status" id="status"></p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+/* 隐藏 YouTube 原生字幕，避免与双语字幕重叠（仅在本插件字幕激活时）
+   用 visibility 而非 display：保留布局，读取字幕时才能算出哪些行滚出了可视区 */
+html.yt-bisub-active .ytp-caption-window-container {
+  visibility: hidden !important;
+}
+
+/* 覆盖层铺满播放器，两行字幕各自绝对定位（支持拖动） */
+.yt-bisub-root {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  font-family: "YouTube Noto", "Roboto", "Microsoft YaHei", sans-serif;
+  line-height: 1.35;
+}
+
+.yt-bisub-root.yt-bisub-hidden {
+  display: none;
+}
+
+.yt-bisub-zh,
+.yt-bisub-en {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  max-width: 80%;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  pointer-events: auto;
+}
+
+/* 英文为主字幕（大、醒目），中文为辅助字幕（小、半透明）；字号由 JS 内联设置 */
+.yt-bisub-en {
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 2px 12px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.yt-bisub-zh {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 5px;
+  padding: 1px 10px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* 解锁时提示可拖动 */
+.yt-bisub-unlocked .yt-bisub-zh,
+.yt-bisub-unlocked .yt-bisub-en {
+  cursor: move;
+  user-select: none;
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: 3px;
+}
+
+/* 锁定按钮 */
+.yt-bisub-lock {
+  pointer-events: auto;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 11px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.yt-bisub-lock:hover {
+  opacity: 1;
+}
+
+.yt-bisub-notice {
+  pointer-events: none;
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #fff;
+  background: rgba(204, 0, 0, 0.75);
+  border-radius: 4px;
+  padding: 4px 12px;
+}
+
+/* 可点击查词的单词 */
+.yt-bisub-word {
+  pointer-events: auto;
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.45);
+}
+
+.yt-bisub-word:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+}
+
+/* 查词卡片 */
+.yt-bisub-pop {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 60;
+  min-width: 180px;
+  max-width: 320px;
+  background: rgba(24, 26, 32, 0.96);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  text-align: left;
+  line-height: 1.5;
+}
+
+.yt-bisub-pop-word {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.yt-bisub-pop-phone {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: "Doulos SIL", "Arial", sans-serif;
+  margin-bottom: 6px;
+}
+
+.yt-bisub-pop-def {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  margin-top: 2px;
+}
+
+.yt-bisub-pop-body {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}

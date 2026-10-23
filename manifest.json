@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube 双语字幕",
+  "version": "1.0.0",
+  "description": "为 YouTube 视频叠加原文+中文双语字幕，翻译完全免费、无需 API key。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "YouTube 双语字幕",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": ["storage", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": [
+    "https://translate.googleapis.com/*",
+    "https://dict.youdao.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": [
+        "src/content/native.js",
+        "src/content/translator.js",
+        "src/content/dictionary.js",
+        "src/content/overlay.js",
+        "src/content/main.js"
+      ],
+      "css": ["src/content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
