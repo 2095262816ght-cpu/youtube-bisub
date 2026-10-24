@@ -16,8 +16,23 @@
 
   <main>
     <div class="row">
-      <label for="showOriginal">显示英文原文</label>
+      <label for="showOriginal">显示英文字幕</label>
       <input type="checkbox" id="showOriginal" />
+    </div>
+
+    <div class="row">
+      <label for="showZh">显示中文字幕</label>
+      <input type="checkbox" id="showZh" />
+    </div>
+
+    <div class="row">
+      <label for="wordLookup">点击单词查词</label>
+      <input type="checkbox" id="wordLookup" />
+    </div>
+
+    <div class="row">
+      <label for="blockFullscreenWheel">禁用全屏滚轮</label>
+      <input type="checkbox" id="blockFullscreenWheel" />
     </div>
 
     <div class="row">
@@ -40,7 +55,12 @@
       </select>
     </div>
 
-    <p class="hint">在 YouTube 视频播放页生效。悬停字幕上按 Ctrl+滚轮可快速缩放该行；点击英文单词可查音标释义；右上角按钮解锁后可分别拖动中英字幕。</p>
+    <div class="row">
+      <span>字幕位置</span>
+      <button type="button" id="resetPosition">重置位置</button>
+    </div>
+
+    <p class="hint">在 YouTube 视频播放页生效。按 Ctrl+滚轮（或 Alt+滚轮）缩放字幕：悬停某行字幕只缩放该行，在播放器其他位置两行一起缩放；开启"点击单词查词"后点英文单词会暂停视频并弹出释义，关闭释义自动继续播放；"禁用全屏滚轮"开启后全屏时滚轮（含 Ctrl+滚轮）不会再滑出推荐视频；右上角按钮解锁后可分别拖动中英字幕，拖乱了可点"重置位置"恢复默认。</p>
     <p class="status" id="status"></p>
   </main>
 

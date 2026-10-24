@@ -14,6 +14,9 @@ const SubtitleOverlay = (() => {
     settings: {
       enabled: true,
       showOriginal: true,
+      showZh: true,
+      wordLookup: true,
+      blockFullscreenWheel: true,
       enFontSize: 22,
       zhFontSize: 16,
       locked: true,
@@ -40,6 +43,7 @@ const SubtitleOverlay = (() => {
   let lockBtn = null;
   let pop = null;
   let popWord = null;
+  let popResumeVideo = null;
   let docHooksInstalled = false;
 
   function getPlayerEl() {
@@ -56,6 +60,29 @@ const SubtitleOverlay = (() => {
 
   // ---------- 查词卡片 ----------
 
+  function getVideo() {
+    return (
+      document.querySelector('#movie_player video') ||
+      getPlayerEl()?.querySelector('video') ||
+      null
+    );
+  }
+
+  // 查词时暂停视频，关闭释义后恢复；原本就是暂停状态则不动
+  function pauseForPop() {
+    const video = getVideo();
+    if (video && !video.paused) {
+      video.pause();
+      popResumeVideo = video;
+    }
+  }
+
+  function resumeAfterPop() {
+    const video = popResumeVideo;
+    popResumeVideo = null;
+    if (video) video.play().catch(() => {});
+  }
+
   function ensurePop() {
     if (pop) return pop;
     pop = document.createElement('div');
@@ -68,6 +95,7 @@ const SubtitleOverlay = (() => {
   function closePop() {
     popWord = null;
     if (pop) pop.hidden = true;
+    resumeAfterPop();
   }
 
   function positionPop(span) {
@@ -83,7 +111,9 @@ const SubtitleOverlay = (() => {
   }
 
   async function showWord(word, span) {
+    if (!state.settings.wordLookup) return;
     ensurePop();
+    pauseForPop();
     popWord = word;
     pop.hidden = false;
 
@@ -144,6 +174,8 @@ const SubtitleOverlay = (() => {
       if (t && t.classList && t.classList.contains('yt-bisub-word')) return;
       closePop();
     });
+    // 挂在 window 捕获阶段：事件流最先到这里，抢在 YouTube 播放器的监听之前
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
   }
 
   // ---------- 拖动 ----------
@@ -222,25 +254,76 @@ const SubtitleOverlay = (() => {
     lineEl.addEventListener('pointercancel', end);
   }
 
-  // Ctrl+滚轮缩放单行字号（防止触发浏览器页面缩放）
-  function makeResizable(lineEl, sizeKey) {
-    let persistTimer = null;
-    lineEl.addEventListener(
-      'wheel',
-      (e) => {
-        if (!e.ctrlKey && !e.metaKey) return;
-        e.preventDefault();
-        const step = e.deltaY < 0 ? 2 : -2;
-        state.settings[sizeKey] = Math.max(
-          MIN_FONT,
-          Math.min(MAX_FONT, state.settings[sizeKey] + step)
-        );
-        applySettings();
-        clearTimeout(persistTimer);
-        persistTimer = setTimeout(() => persist({ [sizeKey]: state.settings[sizeKey] }), 300);
-      },
-      { passive: false }
+  // 滚轮缩放字号，须在捕获阶段拦截，否则 Chrome 的 Ctrl+滚轮页面缩放会同时触发。
+  // Ctrl+滚轮仅悬停字幕行时生效（不影响别处的浏览器缩放）；Alt+滚轮在播放器内
+  // 任意位置生效：悬停某行只改该行，否则两行同改。
+  let wheelPersistTimer = null;
+
+  function bumpFont(sizeKey, step) {
+    state.settings[sizeKey] = Math.max(
+      MIN_FONT,
+      Math.min(MAX_FONT, state.settings[sizeKey] + step)
     );
+    applySettings();
+    clearTimeout(wheelPersistTimer);
+    wheelPersistTimer = setTimeout(
+      () => persist({ enFontSize: state.settings.enFontSize, zhFontSize: state.settings.zhFontSize }),
+      300
+    );
+  }
+
+  // 命中检测用坐标而非事件目标：字幕常被 YouTube 控制栏盖住，
+  // 此时事件目标是控制栏，但用户视觉上仍是在"悬停字幕"
+  function lineAtPoint(x, y) {
+    for (const el of [enLine, zhLine]) {
+      if (!el || el.hidden) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return el;
+    }
+    return null;
+  }
+
+  function onWheel(e) {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const alt = e.altKey;
+    const target = e.target && e.target.closest ? e.target : null;
+    const line =
+      (target && target.closest('.yt-bisub-zh, .yt-bisub-en')) ||
+      lineAtPoint(e.clientX, e.clientY);
+    const fullscreen = !!(
+      document.fullscreenElement || document.webkitFullscreenElement
+    );
+    // stopImmediatePropagation：连同一节点上后注册的监听也掐掉，避免 YouTube 播放器收到滚轮
+    const consume = () => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+    const step = e.deltaY < 0 ? 2 : -2;
+
+    if (ctrl || alt) {
+      if (line) {
+        consume();
+        bumpFont(line.classList.contains('yt-bisub-zh') ? 'zhFontSize' : 'enFontSize', step);
+        return;
+      }
+      if (root) {
+        const r = root.getBoundingClientRect();
+        const inside =
+          e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (inside) {
+          consume();
+          bumpFont('zhFontSize', step);
+          bumpFont('enFontSize', step);
+          return;
+        }
+      }
+      // 播放器外：非全屏时 Ctrl+滚轮留给浏览器缩放；全屏仍吞掉
+    }
+
+    // 全屏时吞掉其余一切滚轮（含 Ctrl+滚轮）：YouTube 会把滚轮当"下滑"手势滑出推荐视频层
+    if (fullscreen && state.settings.blockFullscreenWheel) {
+      consume();
+    }
   }
 
   // ---------- 字幕文本渲染 ----------
@@ -295,6 +378,7 @@ const SubtitleOverlay = (() => {
         state.suppressClick = false;
         return;
       }
+      if (!state.settings.wordLookup) return;
       const t = e.target;
       if (t && t.classList && t.classList.contains('yt-bisub-word')) {
         showWord(t.textContent, t);
@@ -307,8 +391,6 @@ const SubtitleOverlay = (() => {
     });
     makeDraggable(zhLine, 'zh');
     makeDraggable(enLine, 'en');
-    makeResizable(zhLine, 'zhFontSize');
-    makeResizable(enLine, 'enFontSize');
     installDocHooks();
     applySettings();
     return true;
@@ -319,10 +401,12 @@ const SubtitleOverlay = (() => {
     const s = state.settings;
     root.classList.toggle('yt-bisub-hidden', !s.enabled);
     root.classList.toggle('yt-bisub-unlocked', !s.locked);
+    root.classList.toggle('yt-bisub-nolookup', !s.wordLookup);
     enLine.style.fontSize = s.enFontSize + 'px';
     zhLine.style.fontSize = s.zhFontSize + 'px';
     enLine.hidden = !s.showOriginal || !state.currentText;
-    zhLine.hidden = !zhLine.textContent;
+    zhLine.hidden = !s.showZh || !zhLine.textContent;
+    if (!s.wordLookup) closePop();
     lockBtn.textContent = s.locked ? '已锁定' : '可拖动';
     lockBtn.title = s.locked ? '字幕位置已锁定，点击解锁后可拖动' : '点击锁定，防止误拖字幕';
     applyPositions();
@@ -339,6 +423,10 @@ const SubtitleOverlay = (() => {
     if (settings.subPositions) {
       if (settings.subPositions.zh) Object.assign(state.positions.zh, settings.subPositions.zh);
       if (settings.subPositions.en) Object.assign(state.positions.en, settings.subPositions.en);
+    } else if ('subPositions' in settings) {
+      // subPositions 为 null：恢复默认位置（弹窗"重置位置"按钮）
+      Object.assign(state.positions.zh, DEFAULT_POSITIONS.zh);
+      Object.assign(state.positions.en, DEFAULT_POSITIONS.en);
     }
     applySettings();
   }

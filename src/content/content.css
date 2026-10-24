@@ -104,6 +104,17 @@ html.yt-bisub-active .ytp-caption-window-container {
   border-radius: 3px;
 }
 
+/* 关闭查词功能后：去掉可点击样式 */
+.yt-bisub-nolookup .yt-bisub-word {
+  pointer-events: none;
+  cursor: text;
+  border-bottom: none;
+}
+
+.yt-bisub-nolookup .yt-bisub-word:hover {
+  background: none;
+}
+
 /* 查词卡片 */
 .yt-bisub-pop {
   pointer-events: auto;

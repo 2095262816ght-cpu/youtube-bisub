@@ -3,6 +3,9 @@
   const DEFAULTS = {
     enabled: true,
     showOriginal: true,
+    showZh: true,
+    wordLookup: true,
+    blockFullscreenWheel: true,
     enFontSize: 22,
     zhFontSize: 16,
     locked: true,
