@@ -93,4 +93,4 @@ popup.html/js（设置面板）──► main.js（编排：SPA 路由、自动 
 
 ## License
 
-未指定开源许可证。仅供个人学习使用。
+[MIT](LICENSE)
