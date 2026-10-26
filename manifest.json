@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube 双语字幕",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "为 YouTube 视频叠加原文+中文双语字幕，翻译完全免费、无需 API key。",
   "icons": {
     "16": "icons/icon16.png",
