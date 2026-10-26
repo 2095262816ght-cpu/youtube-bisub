@@ -415,7 +415,8 @@ const SubtitleOverlay = (() => {
   // 组合器吐出的渲染入口：中英总是整对到达，en 为空即清空
   function renderPair({ en, zh }) {
     if (!root) return;
-    closePop();
+    // 只在换行/清空时关查词卡片；译文迟到补上（同一行）不打断查词
+    if (!en || en !== state.currentText) closePop();
     if (!en) {
       state.currentText = '';
       enLine.textContent = '';

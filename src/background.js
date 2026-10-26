@@ -1,7 +1,8 @@
 // 后台服务：词典查询 + 请求头修正
 // 有道接口对任何带 Origin 的请求一律 403（防盗链），浏览器 fetch 必带 Origin，
 // 用 declarativeNetRequest 把 Origin 改写成接口自身域名（已实测该值可通过）
-importScripts('src/shared/dict-card.js');
+// 服务脚本位于 src/ 下，相对路径会按 worker 位置解析，必须用扩展根的绝对路径
+importScripts('/src/shared/dict-card.js');
 
 const DICT_RULE_ID = 1;
 
