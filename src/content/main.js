@@ -1,49 +1,15 @@
-// 编排：设置加载、自动开启原生字幕（CC）、驱动字幕读取器与叠加层
+// 编排：设置订阅、自动开启原生字幕（CC）、驱动字幕读取器与叠加层
 (() => {
-  const DEFAULTS = {
-    enabled: true,
-    showOriginal: true,
-    showZh: true,
-    wordLookup: true,
-    blockFullscreenWheel: true,
-    enFontSize: 22,
-    zhFontSize: 16,
-    locked: true,
-    subPositions: null,
-  };
-  const settings = { ...DEFAULTS };
   let currentVideoId = null;
   let watching = false;
 
   SubtitleOverlay.setTranslateFn(Translator);
   SubtitleOverlay.setWordLookupHandler((word) => Dictionary.lookup(word));
-  SubtitleOverlay.setPersistHandler((partial) => {
-    try {
-      chrome.storage.sync.set(partial);
-    } catch {}
-  });
-
-  function loadSettings() {
-    return new Promise((resolve) => {
-      try {
-        chrome.storage.sync.get(DEFAULTS, (stored) => {
-          Object.assign(settings, stored);
-          SubtitleOverlay.setSettings(settings);
-          resolve();
-        });
-      } catch {
-        // 扩展重载后残留的内容脚本会抛 "Extension context invalidated"，按默认设置继续
-        resolve();
-      }
-    });
-  }
-
-  function videoIdFromUrl() {
-    return new URLSearchParams(location.search).get('v');
-  }
+  SubtitleOverlay.setPersistHandler((partial) => Settings.set(partial));
+  SubtitleOverlay.setSettings(Settings.get());
 
   function onCaptionLine(text) {
-    if (!settings.enabled) return;
+    if (!Settings.get().enabled) return;
     SubtitleOverlay.showLine(text);
   }
 
@@ -76,21 +42,26 @@
     const tryEnable = setInterval(() => {
       tries++;
       const pressed = NativeCaptions.isCaptionsButtonPressed();
+      const enabled = Settings.get().enabled;
       if (pressed === true) {
         clearInterval(tryEnable);
         SubtitleOverlay.hideNotice();
-      } else if (pressed === false && settings.enabled) {
+      } else if (pressed === false && enabled) {
         NativeCaptions.enableNativeCaptions();
       }
       if (tries >= 10) {
         clearInterval(tryEnable);
         if (pressed === null) {
           SubtitleOverlay.showNotice('该视频没有可用字幕');
-        } else if (pressed === false && settings.enabled) {
+        } else if (pressed === false && enabled) {
           SubtitleOverlay.showNotice('请点播放器上的 CC 按钮开启字幕');
         }
       }
     }, 1000);
+  }
+
+  function videoIdFromUrl() {
+    return new URLSearchParams(location.search).get('v');
   }
 
   // YouTube 是 SPA，监听页面内导航事件 + 轮询兜底
@@ -102,23 +73,23 @@
     if (currentVideoId && !watching) startWatching();
   }, 1500);
 
-  try {
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'sync') return;
-      for (const [key, { newValue }] of Object.entries(changes)) {
-        settings[key] = newValue;
+  // 设置变更：快照交给叠加层；开关切换有额外副作用
+  let started = false;
+  Settings.subscribe((s, changedKeys) => {
+    SubtitleOverlay.setSettings(s);
+    if (!started) {
+      started = true;
+      onVideoChange();
+    }
+    if (changedKeys && changedKeys.includes('enabled')) {
+      if (s.enabled) {
+        SubtitleOverlay.showLine(NativeCaptions.readText());
+        NativeCaptions.enableNativeCaptions();
+      } else {
+        SubtitleOverlay.hide();
       }
-      SubtitleOverlay.setSettings(settings);
-      if (changes.enabled) {
-        if (settings.enabled) {
-          SubtitleOverlay.showLine(NativeCaptions.readText());
-          NativeCaptions.enableNativeCaptions();
-        } else {
-          SubtitleOverlay.hide();
-        }
-      }
-    });
-  } catch {}
+    }
+  });
 
   // 播放器可能晚于页面出现，轮询挂载字幕层
   const mountTimer = setInterval(() => {
@@ -154,6 +125,4 @@
     }
   });
   Translator.initLocal();
-
-  loadSettings().then(onVideoChange);
 })();

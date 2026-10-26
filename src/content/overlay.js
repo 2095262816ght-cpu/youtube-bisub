@@ -5,27 +5,10 @@ const SubtitleOverlay = (() => {
   const DRAG_THRESHOLD = 4; // px，超过视为拖动而非点击
   const MIN_FONT = 10;
   const MAX_FONT = 64;
-  const DEFAULT_POSITIONS = {
-    zh: { x: 50, y: 87 },
-    en: { x: 50, y: 80 },
-  };
 
   const state = {
-    settings: {
-      enabled: true,
-      showOriginal: true,
-      showZh: true,
-      wordLookup: true,
-      blockFullscreenWheel: true,
-      enFontSize: 22,
-      zhFontSize: 16,
-      locked: true,
-      subPositions: null,
-    },
-    positions: {
-      zh: { ...DEFAULT_POSITIONS.zh },
-      en: { ...DEFAULT_POSITIONS.en },
-    },
+    settings: {},
+    positions: { zh: null, en: null },
     currentText: '',
     seq: 0,
     holdTimer: null,
@@ -181,7 +164,7 @@ const SubtitleOverlay = (() => {
   // ---------- 拖动 ----------
 
   function applyPositions() {
-    if (!root) return;
+    if (!root || !state.positions.zh) return;
     zhLine.style.left = state.positions.zh.x + '%';
     zhLine.style.top = state.positions.zh.y + '%';
     enLine.style.left = state.positions.en.x + '%';
@@ -421,12 +404,10 @@ const SubtitleOverlay = (() => {
   function setSettings(settings) {
     Object.assign(state.settings, settings);
     if (settings.subPositions) {
-      if (settings.subPositions.zh) Object.assign(state.positions.zh, settings.subPositions.zh);
-      if (settings.subPositions.en) Object.assign(state.positions.en, settings.subPositions.en);
-    } else if ('subPositions' in settings) {
-      // subPositions 为 null：恢复默认位置（弹窗"重置位置"按钮）
-      Object.assign(state.positions.zh, DEFAULT_POSITIONS.zh);
-      Object.assign(state.positions.en, DEFAULT_POSITIONS.en);
+      state.positions = {
+        zh: { ...settings.subPositions.zh },
+        en: { ...settings.subPositions.en },
+      };
     }
     applySettings();
   }

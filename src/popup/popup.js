@@ -1,13 +1,3 @@
-const DEFAULTS = {
-  enabled: true,
-  showOriginal: true,
-  showZh: true,
-  wordLookup: true,
-  blockFullscreenWheel: true,
-  enFontSize: 22,
-  zhFontSize: 16,
-};
-
 const els = {
   enabled: document.getElementById('enabled'),
   showOriginal: document.getElementById('showOriginal'),
@@ -40,40 +30,34 @@ function setSelectValue(sel, value) {
   sel.value = v;
 }
 
-chrome.storage.sync.get(DEFAULTS, (stored) => {
-  els.enabled.checked = stored.enabled;
-  els.showOriginal.checked = stored.showOriginal;
-  els.showZh.checked = stored.showZh;
-  els.wordLookup.checked = stored.wordLookup;
-  els.blockFullscreenWheel.checked = stored.blockFullscreenWheel;
-  setSelectValue(els.enFontSize, stored.enFontSize);
-  setSelectValue(els.zhFontSize, stored.zhFontSize);
-});
-
-function save() {
-  chrome.storage.sync.set(
-    {
-      enabled: els.enabled.checked,
-      showOriginal: els.showOriginal.checked,
-      showZh: els.showZh.checked,
-      wordLookup: els.wordLookup.checked,
-      blockFullscreenWheel: els.blockFullscreenWheel.checked,
-      enFontSize: Number(els.enFontSize.value),
-      zhFontSize: Number(els.zhFontSize.value),
-    },
-    () => flashStatus('已保存')
-  );
+function render(s) {
+  els.enabled.checked = s.enabled;
+  els.showOriginal.checked = s.showOriginal;
+  els.showZh.checked = s.showZh;
+  els.wordLookup.checked = s.wordLookup;
+  els.blockFullscreenWheel.checked = s.blockFullscreenWheel;
+  setSelectValue(els.enFontSize, s.enFontSize);
+  setSelectValue(els.zhFontSize, s.zhFontSize);
 }
 
-els.enabled.addEventListener('change', save);
-els.showOriginal.addEventListener('change', save);
-els.showZh.addEventListener('change', save);
-els.wordLookup.addEventListener('change', save);
-els.blockFullscreenWheel.addEventListener('change', save);
-els.enFontSize.addEventListener('change', save);
-els.zhFontSize.addEventListener('change', save);
+Settings.subscribe(render);
 
-// 内容脚本收到 subPositions 为 null 时恢复默认位置
+function bind(key, el, read) {
+  el.addEventListener('change', () => {
+    Settings.set({ [key]: read() });
+    flashStatus('已保存');
+  });
+}
+
+bind('enabled', els.enabled, () => els.enabled.checked);
+bind('showOriginal', els.showOriginal, () => els.showOriginal.checked);
+bind('showZh', els.showZh, () => els.showZh.checked);
+bind('wordLookup', els.wordLookup, () => els.wordLookup.checked);
+bind('blockFullscreenWheel', els.blockFullscreenWheel, () => els.blockFullscreenWheel.checked);
+bind('enFontSize', els.enFontSize, () => Number(els.enFontSize.value));
+bind('zhFontSize', els.zhFontSize, () => Number(els.zhFontSize.value));
+
 els.resetPosition.addEventListener('click', () => {
-  chrome.storage.sync.set({ subPositions: null }, () => flashStatus('已重置字幕位置'));
+  Settings.reset('subPositions');
+  flashStatus('已重置字幕位置');
 });
