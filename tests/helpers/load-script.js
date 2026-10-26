@@ -7,7 +7,8 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 function loadScripts(files, sandbox = {}) {
-  const context = vm.createContext(sandbox);
+  // vm 沙箱没有 Node 定时器；注入宿主实现，t.mock.timers 可替换
+  const context = vm.createContext({ setTimeout, clearTimeout, ...sandbox });
   for (const file of files) {
     const code = fs.readFileSync(path.join(ROOT, file), 'utf8');
     vm.runInContext(code, context, { filename: file });

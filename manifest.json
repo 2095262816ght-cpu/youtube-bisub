@@ -36,6 +36,7 @@
         "src/content/native.js",
         "src/content/translator.js",
         "src/content/dictionary.js",
+        "src/content/composer.js",
         "src/content/overlay.js",
         "src/content/main.js"
       ],

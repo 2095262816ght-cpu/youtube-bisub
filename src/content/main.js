@@ -3,14 +3,24 @@
   let currentVideoId = null;
   let watching = false;
 
-  SubtitleOverlay.setTranslateFn(Translator);
   SubtitleOverlay.setWordLookupHandler((word) => Dictionary.lookup(word));
   SubtitleOverlay.setPersistHandler((partial) => Settings.set(partial));
   SubtitleOverlay.setSettings(Settings.get());
 
+  // 双语行的显示时机由组合器决定，overlay 只渲染
+  const composer = CaptionComposer.create({
+    translate: Translator,
+    onPair: (pair) => SubtitleOverlay.renderPair(pair),
+  });
+
+  function hideAll() {
+    composer.clear();
+    SubtitleOverlay.hide();
+  }
+
   function onCaptionLine(text) {
     if (!Settings.get().enabled) return;
-    SubtitleOverlay.showLine(text);
+    composer.push(text);
   }
 
   function startWatching() {
@@ -27,14 +37,14 @@
       currentVideoId = null;
       watching = false;
       NativeCaptions.stop();
-      SubtitleOverlay.hide();
+      hideAll();
       return;
     }
     if (videoId === currentVideoId) return;
     currentVideoId = videoId;
     watching = false;
     NativeCaptions.stop();
-    SubtitleOverlay.hide();
+    hideAll();
     startWatching();
 
     // 自动开启原生字幕：按钮可能晚于页面出现，多次尝试
@@ -83,10 +93,10 @@
     }
     if (changedKeys && changedKeys.includes('enabled')) {
       if (s.enabled) {
-        SubtitleOverlay.showLine(NativeCaptions.readText());
+        composer.push(NativeCaptions.readText());
         NativeCaptions.enableNativeCaptions();
       } else {
-        SubtitleOverlay.hide();
+        hideAll();
       }
     }
   });

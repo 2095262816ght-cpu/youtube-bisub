@@ -1,6 +1,6 @@
 // 双语字幕叠加层：中英两行独立定位、可拖动（可锁定防误拖）、原文单词可点击查词
+// "显示哪一对、何时换"由 CaptionComposer 决定，本模块只渲染（渲染适配器）
 const SubtitleOverlay = (() => {
-  const HOLD_MAX = 1200; // 译文最长等待时间，超时先出原文
   const WORD_RE = /^[A-Za-z][A-Za-z'-]*$/;
   const DRAG_THRESHOLD = 4; // px，超过视为拖动而非点击
   const MIN_FONT = 10;
@@ -10,10 +10,7 @@ const SubtitleOverlay = (() => {
     settings: {},
     positions: { zh: null, en: null },
     currentText: '',
-    seq: 0,
-    holdTimer: null,
     mounted: false,
-    translate: null,
     onWordLookup: null,
     onPersist: null,
     suppressClick: false,
@@ -412,10 +409,6 @@ const SubtitleOverlay = (() => {
     applySettings();
   }
 
-  function setTranslateFn(fn) {
-    state.translate = fn;
-  }
-
   function setWordLookupHandler(fn) {
     state.onWordLookup = fn;
   }
@@ -424,48 +417,21 @@ const SubtitleOverlay = (() => {
     state.onPersist = fn;
   }
 
-  function showLine(text) {
+  // 组合器吐出的渲染入口：中英总是整对到达，en 为空即清空
+  function renderPair({ en, zh }) {
     if (!root) return;
-    if (!text) {
+    closePop();
+    if (!en) {
       state.currentText = '';
-      state.seq++;
-      clearTimeout(state.holdTimer);
-      closePop();
       enLine.textContent = '';
       zhLine.textContent = '';
       applySettings();
       return;
     }
-    if (text === state.currentText) return;
-    state.currentText = text;
-    const seq = ++state.seq;
-    clearTimeout(state.holdTimer);
-    closePop();
-
-    // 译文已缓存：原文译文立即同时出现
-    const cached = state.translate ? state.translate.getCached(text) : null;
-    if (cached) {
-      setEnText(text);
-      zhLine.textContent = cached;
-      applySettings();
-      return;
-    }
-
-    // 译文未就绪：先保留上一行，等译文到了两行一起换；超时先出原文
-    const display = (zh) => {
-      if (seq !== state.seq) return;
-      setEnText(text);
-      zhLine.textContent = zh;
-      applySettings();
-    };
-    state.holdTimer = setTimeout(() => display(''), HOLD_MAX);
-    if (state.translate) {
-      state.translate.translate(text).then((zh) => {
-        if (seq !== state.seq) return;
-        clearTimeout(state.holdTimer);
-        display(zh);
-      });
-    }
+    state.currentText = en;
+    setEnText(en);
+    zhLine.textContent = zh;
+    applySettings();
   }
 
   function showNotice(text) {
@@ -485,8 +451,6 @@ const SubtitleOverlay = (() => {
 
   function hide() {
     state.currentText = '';
-    state.seq++;
-    clearTimeout(state.holdTimer);
     closePop();
     if (root) {
       zhLine.textContent = '';
@@ -509,10 +473,9 @@ const SubtitleOverlay = (() => {
     hide,
     destroy,
     setSettings,
-    setTranslateFn,
     setWordLookupHandler,
     setPersistHandler,
-    showLine,
+    renderPair,
     showNotice,
     hideNotice,
   };
