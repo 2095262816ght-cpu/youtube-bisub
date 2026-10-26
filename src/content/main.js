@@ -33,18 +33,12 @@
 
   function onVideoChange() {
     const videoId = videoIdFromUrl();
-    if (!videoId) {
-      currentVideoId = null;
-      watching = false;
-      NativeCaptions.stop();
-      hideAll();
-      return;
-    }
     if (videoId === currentVideoId) return;
     currentVideoId = videoId;
     watching = false;
     NativeCaptions.stop();
     hideAll();
+    if (!videoId) return;
     startWatching();
 
     // 自动开启原生字幕：按钮可能晚于页面出现，多次尝试

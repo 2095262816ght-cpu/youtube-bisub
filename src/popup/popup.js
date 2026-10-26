@@ -44,18 +44,18 @@ Settings.subscribe(render);
 
 function bind(key, el, read) {
   el.addEventListener('change', () => {
-    Settings.set({ [key]: read() });
+    Settings.set({ [key]: read(el) });
     flashStatus('已保存');
   });
 }
 
-bind('enabled', els.enabled, () => els.enabled.checked);
-bind('showOriginal', els.showOriginal, () => els.showOriginal.checked);
-bind('showZh', els.showZh, () => els.showZh.checked);
-bind('wordLookup', els.wordLookup, () => els.wordLookup.checked);
-bind('blockFullscreenWheel', els.blockFullscreenWheel, () => els.blockFullscreenWheel.checked);
-bind('enFontSize', els.enFontSize, () => Number(els.enFontSize.value));
-bind('zhFontSize', els.zhFontSize, () => Number(els.zhFontSize.value));
+bind('enabled', els.enabled, (el) => el.checked);
+bind('showOriginal', els.showOriginal, (el) => el.checked);
+bind('showZh', els.showZh, (el) => el.checked);
+bind('wordLookup', els.wordLookup, (el) => el.checked);
+bind('blockFullscreenWheel', els.blockFullscreenWheel, (el) => el.checked);
+bind('enFontSize', els.enFontSize, (el) => Number(el.value));
+bind('zhFontSize', els.zhFontSize, (el) => Number(el.value));
 
 els.resetPosition.addEventListener('click', () => {
   Settings.reset('subPositions');

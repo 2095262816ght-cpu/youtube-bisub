@@ -150,9 +150,7 @@ const SubtitleOverlay = (() => {
     });
     document.addEventListener('click', (e) => {
       if (!pop || pop.hidden) return;
-      const t = e.target;
-      if (pop.contains(t)) return;
-      if (t && t.classList && t.classList.contains('yt-bisub-word')) return;
+      if (pop.contains(e.target) || e.target.classList?.contains('yt-bisub-word')) return;
       closePop();
     });
     // 挂在 window 捕获阶段：事件流最先到这里，抢在 YouTube 播放器的监听之前
@@ -186,8 +184,8 @@ const SubtitleOverlay = (() => {
       startY = e.clientY;
       startPos = { ...state.positions[which] };
       if (dragging) {
-        if (lineEl.setPointerCapture) lineEl.setPointerCapture(e.pointerId);
-        if (e.preventDefault) e.preventDefault();
+        lineEl.setPointerCapture(e.pointerId);
+        e.preventDefault();
       }
     });
 
@@ -217,11 +215,10 @@ const SubtitleOverlay = (() => {
     const end = (e) => {
       if (!dragging) return;
       dragging = false;
-      if (lineEl.releasePointerCapture) {
-        try {
-          lineEl.releasePointerCapture(e.pointerId);
-        } catch {}
-      }
+      // 释放失败（如已被浏览器隐式释放）不影响后续
+      try {
+        lineEl.releasePointerCapture(e.pointerId);
+      } catch {}
       if (moved > DRAG_THRESHOLD) {
         persist({
           subPositions: {
@@ -267,10 +264,8 @@ const SubtitleOverlay = (() => {
   function onWheel(e) {
     const ctrl = e.ctrlKey || e.metaKey;
     const alt = e.altKey;
-    const target = e.target && e.target.closest ? e.target : null;
     const line =
-      (target && target.closest('.yt-bisub-zh, .yt-bisub-en')) ||
-      lineAtPoint(e.clientX, e.clientY);
+      e.target.closest?.('.yt-bisub-zh, .yt-bisub-en') || lineAtPoint(e.clientX, e.clientY);
     const fullscreen = !!(
       document.fullscreenElement || document.webkitFullscreenElement
     );
@@ -359,10 +354,9 @@ const SubtitleOverlay = (() => {
         state.suppressClick = false;
         return;
       }
-      if (!state.settings.wordLookup) return;
-      const t = e.target;
-      if (t && t.classList && t.classList.contains('yt-bisub-word')) {
-        showWord(t.textContent, t);
+      // wordLookup 开关由 showWord 自己把守（同一时刻判一次即可）
+      if (e.target.classList?.contains('yt-bisub-word')) {
+        showWord(e.target.textContent, e.target);
       }
     });
     lockBtn.addEventListener('click', () => {

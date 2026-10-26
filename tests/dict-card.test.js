@@ -5,10 +5,8 @@ const { loadScripts, getGlobal } = require('./helpers/load-script');
 // vm 沙箱里的对象与本 realm 原型不同，deepStrictEqual 会拒绝；序列化后比较
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
-const { DictCard } = (() => {
-  const context = loadScripts(['src/shared/dict-card.js']);
-  return { DictCard: getGlobal(context, 'DictCard') };
-})();
+const context = loadScripts(['src/shared/dict-card.js']);
+const DictCard = getGlobal(context, 'DictCard');
 
 const full = {
   simple: { word: [{ usphone: 'wɜːrd', ukphone: 'wɜːd' }] },

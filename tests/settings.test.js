@@ -8,20 +8,22 @@ const plain = (v) => JSON.parse(JSON.stringify(v));
 function fakeChrome(initial = {}) {
   const store = JSON.parse(JSON.stringify(initial));
   const changeListeners = [];
+  // 本地 set 与远端写入同样触发 onChanged（对齐真实 chrome 行为）
+  function fire(partial) {
+    const changes = {};
+    for (const [k, v] of Object.entries(partial)) {
+      changes[k] = { newValue: v, oldValue: store[k] };
+      store[k] = JSON.parse(JSON.stringify(v));
+    }
+    for (const l of changeListeners) l(changes, 'sync');
+  }
   return {
     storage: {
       sync: {
         get(_keys, cb) {
           cb(JSON.parse(JSON.stringify(store)));
         },
-        set(partial) {
-          const changes = {};
-          for (const [k, v] of Object.entries(partial)) {
-            changes[k] = { newValue: v, oldValue: store[k] };
-            store[k] = JSON.parse(JSON.stringify(v));
-          }
-          for (const l of changeListeners) l(changes, 'sync');
-        },
+        set: fire,
       },
       onChanged: {
         addListener(l) {
@@ -30,14 +32,7 @@ function fakeChrome(initial = {}) {
       },
     },
     _store: store,
-    _fireRemote(partial) {
-      const changes = {};
-      for (const [k, v] of Object.entries(partial)) {
-        changes[k] = { newValue: v, oldValue: store[k] };
-        store[k] = JSON.parse(JSON.stringify(v));
-      }
-      for (const l of changeListeners) l(changes, 'sync');
-    },
+    _fireRemote: fire,
   };
 }
 

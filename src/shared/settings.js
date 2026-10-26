@@ -27,25 +27,21 @@ const Settings = (() => {
     return JSON.parse(JSON.stringify(v));
   }
 
-  function normalizePositions(value) {
+  // 兼容老数据：subPositions 为 null 曾表示"重置"，读到一律等同缺省
+  function normalize(key, value) {
+    if (key !== 'subPositions') return value;
     const d = DEFAULTS.subPositions;
     const line = (v, fallback) =>
       v && typeof v.x === 'number' && typeof v.y === 'number'
         ? { x: v.x, y: v.y }
         : { ...fallback };
-    if (!value || typeof value !== 'object') return clone(d);
-    return { zh: line(value.zh, d.zh), en: line(value.en, d.en) };
-  }
-
-  function normalize(key, value) {
-    // 兼容老数据：subPositions 为 null 曾表示"重置"，读到一律等同缺省
-    return key === 'subPositions' ? normalizePositions(value) : value;
+    return { zh: line(value?.zh, d.zh), en: line(value?.en, d.en) };
   }
 
   function resolve(stored) {
     const s = {};
     for (const key of Object.keys(DEFAULTS)) {
-      s[key] = key in stored ? normalize(key, stored[key]) : clone(DEFAULTS[key]);
+      s[key] = normalize(key, key in stored ? stored[key] : DEFAULTS[key]);
     }
     return s;
   }
@@ -81,7 +77,7 @@ const Settings = (() => {
 
   function reset(key) {
     if (!(key in DEFAULTS)) return;
-    set({ [key]: clone(DEFAULTS[key]) });
+    set({ [key]: DEFAULTS[key] });
   }
 
   function subscribe(cb) {

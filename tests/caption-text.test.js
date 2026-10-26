@@ -2,12 +2,14 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { loadScripts, getGlobal } = require('./helpers/load-script');
 
-const { CaptionText } = (() => {
-  const context = loadScripts(['src/content/caption-text.js']);
-  return { CaptionText: getGlobal(context, 'CaptionText') };
-})();
+const context = loadScripts(['src/content/caption-text.js']);
+const CaptionText = getGlobal(context, 'CaptionText');
 
 const extract = (...texts) => CaptionText.extract(texts.map((text) => ({ text })));
+
+// 超过 MAX_UNIT(150) 的累积前缀，供“只留最后一句”类用例共用
+const LONG_FIRST =
+  'He thought back on all those quiet rainy days near the old river station where they all once met and talked together for a long while about the old days. ';
 
 test('短文本原样输出（仅归一空白）', () => {
   assert.strictEqual(extract('  Hello   world. '), 'Hello world.');
@@ -22,25 +24,19 @@ test('连字符断行接回', () => {
 });
 
 test('累积文本只留最后一句', () => {
-  const first =
-    'He thought back on all those quiet rainy days near the old river station where they all once met and talked together for a long while about the old days. ';
-  const text = first + 'He slept now.';
+  const text = LONG_FIRST + 'He slept now.';
   assert.ok(text.length > 150);
   assert.strictEqual(extract(text), 'He slept now.');
 });
 
 test('缩写（Dr.）不当句尾断点', () => {
-  const first =
-    'He thought back on all those quiet rainy days near the old river station where they all once met and talked together for a long while about the old days. ';
-  const text = first + 'Dr. Brown arrived.';
+  const text = LONG_FIRST + 'Dr. Brown arrived.';
   assert.ok(text.length > 150);
   assert.strictEqual(extract(text), 'Dr. Brown arrived.');
 });
 
 test('尾句过短时连上一句一起保留', () => {
-  const first =
-    'He thought back on all those quiet rainy days near the old river station where they all once met and talked together for a long while about the old days. ';
-  const text = first + 'They all went home. Ok';
+  const text = LONG_FIRST + 'They all went home. Ok';
   assert.ok(text.length > 150);
   assert.strictEqual(extract(text), 'They all went home. Ok');
 });
