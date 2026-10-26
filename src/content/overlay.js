@@ -5,6 +5,7 @@ const SubtitleOverlay = (() => {
   const DRAG_THRESHOLD = 4; // px，超过视为拖动而非点击
   const MIN_FONT = 10;
   const MAX_FONT = 64;
+  const MAX_DEFS = 4; // 查词卡片展示条数：展示决策，留在渲染侧
 
   const state = {
     settings: {},
@@ -120,7 +121,7 @@ const SubtitleOverlay = (() => {
       body.textContent = '查询失败，请重试';
       return;
     }
-    if (!result || (!result.usphone && !result.defs.length)) {
+    if (DictCard.isEmpty(result)) {
       body.textContent = '未找到释义';
       return;
     }
@@ -133,7 +134,7 @@ const SubtitleOverlay = (() => {
       phone.textContent = phones.join('　');
       body.appendChild(phone);
     }
-    for (const def of result.defs) {
+    for (const def of result.defs.slice(0, MAX_DEFS)) {
       const line = document.createElement('div');
       line.className = 'yt-bisub-pop-def';
       line.textContent = def;

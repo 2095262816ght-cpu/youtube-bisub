@@ -32,6 +32,7 @@
       "matches": ["https://www.youtube.com/*"],
       "js": [
         "src/shared/settings.js",
+        "src/shared/dict-card.js",
         "src/content/caption-text.js",
         "src/content/native.js",
         "src/content/translator.js",
